@@ -4,4 +4,3 @@ altair
 pandas
 numpy
 google.cloud
-json
