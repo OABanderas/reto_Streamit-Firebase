@@ -11,7 +11,7 @@ db = firestore.Client(credentials=creds, project="movies-reto-43af9")
 
 dbMovies = db.collection("movies")
 
-# Sidebar - Menú de opciones
+# ----------------------- SIDEBAR -----------------------
 st.sidebar.header("Menú de opciones")
 
 # Checkbox para mostrar todas las películas
@@ -25,28 +25,32 @@ btn_search = st.sidebar.button("Buscar filmes")
 # Filtrar por director
 st.sidebar.subheader("Seleccionar Director")
 directors_ref = list(dbMovies.stream())
-directors = sorted(set(movie.to_dict().get("director", "") for movie in directors_ref))
+directors = sorted(set(movie.to_dict().get("director", "") for movie in directors_ref if "director" in movie.to_dict()))
 director_selected = st.sidebar.selectbox("Selecciona un director", directors)
 btn_filter_director = st.sidebar.button("Filtrar director")
 
 # Agregar nueva película
 st.sidebar.subheader("Nuevo filme")
-new_title = st.sidebar.text_input("Name:")
+new_title = st.sidebar.text_input("Nombre:")
 new_director = st.sidebar.text_input("Director:")
 new_year = st.sidebar.text_input("Año de lanzamiento:")
 new_genre = st.sidebar.text_input("Género:")
 btn_add_movie = st.sidebar.button("Agregar película")
 
-# ----------- ÁREA PRINCIPAL -------------
-st.title("Netflix app")
+# ----------------------- ÁREA PRINCIPAL -----------------------
+st.title("Netflix App")
 
-# Mostrar todas las películas
+# Mostrar todas las películas si el checkbox está activado
 if toggle_all_movies:
     movies_ref = list(dbMovies.stream())
     movies_dict = list(map(lambda x: x.to_dict(), movies_ref))
     movies_dataframe = pd.DataFrame(movies_dict)
-    st.write(f"Total filmes mostrados: {len(movies_dataframe)}")
-    st.dataframe(movies_dataframe)
+    
+    if not movies_dataframe.empty:
+        st.write(f"**Total filmes mostrados:** {len(movies_dataframe)}")
+        st.dataframe(movies_dataframe)
+    else:
+        st.write("No hay filmes en la base de datos.")
 
 # Buscar película por título
 if btn_search and title_search:
@@ -55,7 +59,7 @@ if btn_search and title_search:
 
     if results:
         df_results = pd.DataFrame(results)
-        st.write(f"Total filmes encontrados: {len(df_results)}")
+        st.write(f"**Total filmes encontrados:** {len(df_results)}")
         st.dataframe(df_results)
     else:
         st.write("No se encontraron películas con ese título.")
@@ -67,7 +71,7 @@ if btn_filter_director and director_selected:
 
     if filtered_results:
         df_filtered = pd.DataFrame(filtered_results)
-        st.write(f"Total de filmes de {director_selected}: {len(df_filtered)}")
+        st.write(f"**Total de filmes de {director_selected}:** {len(df_filtered)}")
         st.dataframe(df_filtered)
     else:
         st.write("No se encontraron películas para este director.")
@@ -81,4 +85,4 @@ if btn_add_movie and new_title and new_director and new_year and new_genre:
         "genre": new_genre,
     }
     dbMovies.add(new_movie)
-    st.success("Película agregada correctamente")
+    st.sidebar.success("Película agregada correctamente")
