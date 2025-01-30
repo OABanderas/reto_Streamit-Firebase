@@ -11,63 +11,68 @@ db = firestore.Client(credentials=creds, project="movies-reto-43af9")
 
 dbMovies = db.collection("movies")
 
+# Sidebar - Menú de opciones
 st.sidebar.header("Menú de opciones")
 
 # Checkbox para mostrar todas las películas
 toggle_all_movies = st.sidebar.checkbox("Mostrar todas las películas")
 
+# Búsqueda por título
+st.sidebar.subheader("Buscar película por título")
+title_search = st.sidebar.text_input("Título del filme:")
+btn_search = st.sidebar.button("Buscar filmes")
+
+# Filtrar por director
+st.sidebar.subheader("Seleccionar Director")
+directors_ref = list(dbMovies.stream())
+directors = sorted(set(movie.to_dict().get("director", "") for movie in directors_ref))
+director_selected = st.sidebar.selectbox("Selecciona un director", directors)
+btn_filter_director = st.sidebar.button("Filtrar director")
+
+# Agregar nueva película
+st.sidebar.subheader("Nuevo filme")
+new_title = st.sidebar.text_input("Name:")
+new_director = st.sidebar.text_input("Director:")
+new_year = st.sidebar.text_input("Año de lanzamiento:")
+new_genre = st.sidebar.text_input("Género:")
+btn_add_movie = st.sidebar.button("Agregar película")
+
+# ----------- ÁREA PRINCIPAL -------------
+st.title("Netflix app")
+
+# Mostrar todas las películas
 if toggle_all_movies:
     movies_ref = list(dbMovies.stream())
     movies_dict = list(map(lambda x: x.to_dict(), movies_ref))
     movies_dataframe = pd.DataFrame(movies_dict)
+    st.write(f"Total filmes mostrados: {len(movies_dataframe)}")
     st.dataframe(movies_dataframe)
 
-# ----------------- BÚSQUEDA POR TÍTULO ----------------- #
-st.sidebar.subheader("Buscar película por título")
-title_search = st.sidebar.text_input("Título de la película")
-btn_search = st.sidebar.button("Buscar")
-
-def search_movie_by_title(title):
-    movies_ref = dbMovies.where("title", ">=", title).where("title", "<=", title + "\uf8ff").stream()
-    return [movie.to_dict() for movie in movies_ref]
-
+# Buscar película por título
 if btn_search and title_search:
-    results = search_movie_by_title(title_search.lower())
+    movies_ref = dbMovies.where("title", ">=", title_search).where("title", "<=", title_search + "\uf8ff").stream()
+    results = [movie.to_dict() for movie in movies_ref]
+
     if results:
-        st.dataframe(pd.DataFrame(results))
+        df_results = pd.DataFrame(results)
+        st.write(f"Total filmes encontrados: {len(df_results)}")
+        st.dataframe(df_results)
     else:
-        st.sidebar.write("No se encontraron coincidencias.")
+        st.write("No se encontraron películas con ese título.")
 
-# ----------------- FILTRAR POR DIRECTOR ----------------- #
-st.sidebar.subheader("Filtrar por director")
-
-# Obtener la lista de directores únicos
-directors_ref = list(dbMovies.stream())
-directors = sorted(set(movie.to_dict().get("director", "") for movie in directors_ref))
-
-director_selected = st.sidebar.selectbox("Selecciona un director", directors)
-btn_filter_director = st.sidebar.button("Filtrar")
-
-def filter_by_director(director):
-    movies_ref = dbMovies.where("director", "==", director).stream()
-    return [movie.to_dict() for movie in movies_ref]
-
+# Filtrar por director
 if btn_filter_director and director_selected:
-    filtered_movies = filter_by_director(director_selected)
-    if filtered_movies:
-        st.dataframe(pd.DataFrame(filtered_movies))
-        st.sidebar.write(f"Total de películas encontradas: {len(filtered_movies)}")
+    filtered_movies = dbMovies.where("director", "==", director_selected).stream()
+    filtered_results = [movie.to_dict() for movie in filtered_movies]
+
+    if filtered_results:
+        df_filtered = pd.DataFrame(filtered_results)
+        st.write(f"Total de filmes de {director_selected}: {len(df_filtered)}")
+        st.dataframe(df_filtered)
     else:
-        st.sidebar.write("No se encontraron películas para este director.")
+        st.write("No se encontraron películas para este director.")
 
-# ----------------- FORMULARIO PARA INSERTAR PELÍCULA ----------------- #
-st.sidebar.subheader("Agregar nueva película")
-new_title = st.sidebar.text_input("Título")
-new_director = st.sidebar.text_input("Director")
-new_year = st.sidebar.text_input("Año de lanzamiento")
-new_genre = st.sidebar.text_input("Género")
-btn_add_movie = st.sidebar.button("Agregar película")
-
+# Agregar nueva película
 if btn_add_movie and new_title and new_director and new_year and new_genre:
     new_movie = {
         "title": new_title,
@@ -76,4 +81,4 @@ if btn_add_movie and new_title and new_director and new_year and new_genre:
         "genre": new_genre,
     }
     dbMovies.add(new_movie)
-    st.sidebar.success("Película agregada correctamente")
+    st.success("Película agregada correctamente")
