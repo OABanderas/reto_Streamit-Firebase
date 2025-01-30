@@ -8,6 +8,12 @@ import json
 key_dict = json.loads(st.secrets["textkey"])
 creds = service_account.Credentials.from_service_account_info(key_dict)
 db = firestore.Client(credentials=creds, project="movies-reto-43af9")
+try:
+    # Intentar acceder a Firestore con un documento de prueba
+    doc = db.collection("movies").document("test_doc").get()
+    st.success("✅ Conectado a Firestore correctamente.")
+except Exception as e:
+    st.error(f"❌ Error al conectar a Firestore: {e}")
 
 dbMovies = db.collection("movies")
 
